@@ -5,7 +5,7 @@ services:
     build: .
     container_name: free-go-app
     ports:
-      - '${APP_PORT:-4000}:4000'
+      - '${APP_PORT:-3000}:3000'
     depends_on:
       postgres:
         condition: service_started
