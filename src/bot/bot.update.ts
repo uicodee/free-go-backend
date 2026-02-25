@@ -5,6 +5,7 @@ import { LeaderboardService } from '../leaderboard/leaderboard.service';
 import { ChannelsService } from '../channels/channels.service';
 import { BotService } from './bot.service';
 import { InlineKeyboard } from 'grammy';
+import { User } from '@/users/user.entity';
 
 @Injectable()
 export class BotUpdate implements OnModuleInit {
@@ -16,15 +17,19 @@ export class BotUpdate implements OnModuleInit {
     private readonly configService: ConfigService,
   ) {}
 
-  private async notifyReferrer(bot: any, referrer: import('../entities/user.entity').User, newUser: import('../entities/user.entity').User) {
+  private async notifyReferrer(bot: any, referrer: User, newUser: User) {
     try {
-      const name = [newUser.first_name, newUser.last_name].filter(Boolean).join(' ');
+      const name = [newUser.first_name, newUser.last_name]
+        .filter(Boolean)
+        .join(' ');
       const handle = newUser.username ? ` (@${newUser.username})` : '';
       await bot.api.sendMessage(
         parseInt(referrer.telegram_id, 10),
         `🎉 ${name}${handle} sizning referal havolangiz orqali ro'yxatdan o'tdi!\n\n👥 Jami taklif qilganlar: ${referrer.referral_count + 1} ta`,
       );
-    } catch { /* referrer may have blocked bot */ }
+    } catch {
+      /* referrer may have blocked bot */
+    }
   }
 
   onModuleInit() {
@@ -43,14 +48,20 @@ export class BotUpdate implements OnModuleInit {
         const user = await this.usersService.findByTelegramId(userId);
         if (!user) return;
 
-        const missing = await this.channelsService.getMissingSubscriptions(userId, bot);
+        const missing = await this.channelsService.getMissingSubscriptions(
+          userId,
+          bot,
+        );
         const hasUnsubscribed = missing.length > 0;
 
         if (!hasUnsubscribed) return; // всё ещё подписан на все остальные
 
         const kb = new InlineKeyboard();
         for (const ch of missing) {
-          kb.url(`📢 ${ch.title}`, this.channelsService.getChannelUrl(ch)).row();
+          kb.url(
+            `📢 ${ch.title}`,
+            this.channelsService.getChannelUrl(ch),
+          ).row();
         }
         kb.text('✅ Tekshirish', 'check_subscription');
 
@@ -59,17 +70,19 @@ export class BotUpdate implements OnModuleInit {
             await this.usersService.setPro(userId, false);
             await bot.api.sendMessage(
               userId,
-              '❌ Siz majburiy kanallardan biridan chiqdingiz.\n\nPro obunangiz bekor qilindi. Qaytadan obuna bo\'ling:',
+              "❌ Siz majburiy kanallardan biridan chiqdingiz.\n\nPro obunangiz bekor qilindi. Qaytadan obuna bo'ling:",
               { reply_markup: kb },
             );
           } else {
             await bot.api.sendMessage(
               userId,
-              '⚠️ Siz majburiy kanallardan biridan chiqdingiz.\n\nBotdan foydalanish uchun qaytadan obuna bo\'ling:',
+              "⚠️ Siz majburiy kanallardan biridan chiqdingiz.\n\nBotdan foydalanish uchun qaytadan obuna bo'ling:",
               { reply_markup: kb },
             );
           }
-        } catch { /* user may have blocked bot */ }
+        } catch {
+          /* user may have blocked bot */
+        }
       }
     });
 
@@ -92,7 +105,11 @@ export class BotUpdate implements OnModuleInit {
             referrer && referrer.telegram_id !== String(ctx.from.id)
               ? referrer.id
               : undefined;
-          const { user: newUser, isNew, referrer: referrerUser } = await this.usersService.upsertFromTelegram(
+          const {
+            user: newUser,
+            isNew,
+            referrer: referrerUser,
+          } = await this.usersService.upsertFromTelegram(
             {
               id: ctx.from.id,
               first_name: ctx.from.first_name,
@@ -109,7 +126,10 @@ export class BotUpdate implements OnModuleInit {
         }
       }
 
-      const missing = await this.channelsService.getMissingSubscriptions(ctx.from.id, bot);
+      const missing = await this.channelsService.getMissingSubscriptions(
+        ctx.from.id,
+        bot,
+      );
       if (missing.length === 0) return next();
 
       const kb = new InlineKeyboard();
@@ -130,11 +150,17 @@ export class BotUpdate implements OnModuleInit {
       await ctx.answerCallbackQuery();
       if (!ctx.from) return;
 
-      const missing = await this.channelsService.getMissingSubscriptions(ctx.from.id, bot);
+      const missing = await this.channelsService.getMissingSubscriptions(
+        ctx.from.id,
+        bot,
+      );
       if (missing.length > 0) {
         const kb = new InlineKeyboard();
         for (const ch of missing) {
-          kb.url(`📢 ${ch.title}`, this.channelsService.getChannelUrl(ch)).row();
+          kb.url(
+            `📢 ${ch.title}`,
+            this.channelsService.getChannelUrl(ch),
+          ).row();
         }
         kb.text('✅ Tekshirish', 'check_subscription');
         await ctx.editMessageText(
@@ -147,7 +173,8 @@ export class BotUpdate implements OnModuleInit {
         const greeting = `Salom, ${user?.first_name ?? ctx.from.first_name}! 👋 Free Go'ga xush kelibsiz.`;
         await ctx.editMessageText(greeting, {
           reply_markup: new InlineKeyboard()
-            .webApp('🚀 Mini-ilovani ochish', miniAppUrl).row()
+            .webApp('🚀 Mini-ilovani ochish', miniAppUrl)
+            .row()
             .text('🔗 Referal havolam', 'get_referral'),
         });
       }
@@ -169,7 +196,11 @@ export class BotUpdate implements OnModuleInit {
         }
       }
 
-      const { user, isNew, referrer: referrerUser } = await this.usersService.upsertFromTelegram(
+      const {
+        user,
+        isNew,
+        referrer: referrerUser,
+      } = await this.usersService.upsertFromTelegram(
         {
           id: from.id,
           first_name: from.first_name,
@@ -211,8 +242,10 @@ export class BotUpdate implements OnModuleInit {
       await ctx.reply(
         `🔗 Sizning referal havolangiz:\n\n${link}\n\n📊 Taklif qilganlar: ${user.referral_count} ta`,
         {
-          reply_markup: new InlineKeyboard()
-            .url('📤 Do\'stlarga yuborish', shareUrl),
+          reply_markup: new InlineKeyboard().url(
+            "📤 Do'stlarga yuborish",
+            shareUrl,
+          ),
         },
       );
     });
@@ -222,14 +255,16 @@ export class BotUpdate implements OnModuleInit {
       const from = ctx.from;
       if (!from) return;
       const user = await this.usersService.findByTelegramId(from.id);
-      if (!user) return ctx.reply('Avval /start buyrug\'ini yuboring.');
+      if (!user) return ctx.reply("Avval /start buyrug'ini yuboring.");
       const link = `https://t.me/${botUsername}?start=ref_${user.referral_code}`;
       const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('Free Go orqali bepul Pro obuna oling!')}`;
       await ctx.reply(
         `🔗 Sizning referal havolangiz:\n\n${link}\n\n📊 Taklif qilganlar: ${user.referral_count} ta`,
         {
-          reply_markup: new InlineKeyboard()
-            .url('📤 Do\'stlarga yuborish', shareUrl),
+          reply_markup: new InlineKeyboard().url(
+            "📤 Do'stlarga yuborish",
+            shareUrl,
+          ),
         },
       );
     });
@@ -237,7 +272,7 @@ export class BotUpdate implements OnModuleInit {
     // ─── /leaderboard ─────────────────────────────────────────────────────────
     bot.command('leaderboard', async (ctx) => {
       const top = await this.leaderboardService.getTop(10);
-      if (top.length === 0) return ctx.reply('Hozircha hech kim yo\'q.');
+      if (top.length === 0) return ctx.reply("Hozircha hech kim yo'q.");
 
       const rankEmoji: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
       const lines = top.map((u) => {
