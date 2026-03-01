@@ -54,22 +54,38 @@ export class ProController {
       const until = status.active_until
         ? new Date(status.active_until).toLocaleDateString('uz-UZ', { day: 'numeric', month: 'long', year: 'numeric' })
         : null;
+      const shareText = `*🚀 FreeGo’da CANVA PRO — 30 KUN BEPUL!*
+
+Premium imkoniyatlardan foydalanmoqchimisiz?
+Endi sizda ajoyib imkoniyat bor! 🎁
+
+🔥 30 kunlik *CANVA PRO obuna*
+🔥 Cheklangan joylar
+🔥 Tez va oson faollashtirish
+
+Barcha premium funksiyalarni sinab ko‘ring va natijani o‘zingiz his qiling!
+
+⏳ Joylar tugashidan oldin ulgurib qoling!
+👇 Hoziroq qo‘shiling!`;
 
       const lines = [
-        '⚡️ Pro obuna faollashtirildi!',
+        '<b>⚡️ Pro obuna muvaffaqiyatli faollashtirildi!</b>',
         '',
-        until ? `Amal qilish muddati: ${until}` : '',
-        `Bo'sh joylar: ${slotsLeft} / ${status.total_slots}`,
+        until ? `📅 Amal qilish muddati: <b>${until}</b>` : '',
+        `👥 Bo‘sh joylar: <b>${slotsLeft} / ${status.total_slots}</b>`,
         '',
-        `Do'stlaringizni ham taklif qiling va ular ham bepul Pro olishsin:`,
+        `🎁 Do‘stlaringizni ham taklif qiling va ular ham bepul Pro obunaga ega bo‘lishsin:`,
         refLink,
+        '',
+        `❗️Eslatma: Agar majburiy kanallardan chiqib ketsangiz, Avtomatik bloklanasiz va keyingi oy pro olish imkoniyatidan mahrum bolasiz`,
       ].filter((l) => l !== null && l !== undefined);
 
-      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent("Free Go orqali bepul Pro obuna oling!")}`;
+      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent(shareText)}`;
       await this.botService.bot.api.sendMessage(
         parseInt(user.telegram_id, 10),
         lines.join('\n'),
         {
+          parse_mode: 'HTML',
           reply_markup: {
             inline_keyboard: [
               [

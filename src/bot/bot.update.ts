@@ -36,6 +36,19 @@ export class BotUpdate implements OnModuleInit {
     const bot = this.botService.bot;
     const miniAppUrl = this.configService.get<string>('miniAppUrl') ?? '';
     const botUsername = this.configService.get<string>('bot.username') ?? '';
+    const shareText = `*🚀 FreeGo’da CANVA PRO — 30 KUN BEPUL!*
+
+Premium imkoniyatlardan foydalanmoqchimisiz?
+Endi sizda ajoyib imkoniyat bor! 🎁
+
+🔥 30 kunlik *CANVA PRO obuna*
+🔥 Cheklangan joylar
+🔥 Tez va oson faollashtirish
+
+Barcha premium funksiyalarni sinab ko‘ring va natijani o‘zingiz his qiling!
+
+⏳ Joylar tugashidan oldin ulgurib qoling!
+👇 Hoziroq qo‘shiling!`;
 
     // ─── chat_member: выход из канала → отменить Pro ─────────────────────────
     bot.on('chat_member', async (ctx) => {
@@ -197,7 +210,7 @@ export class BotUpdate implements OnModuleInit {
       }
 
       const {
-        user,
+        user: newUser,
         isNew,
         referrer: referrerUser,
       } = await this.usersService.upsertFromTelegram(
@@ -213,14 +226,18 @@ export class BotUpdate implements OnModuleInit {
       );
 
       if (isNew && referrerUser) {
-        await this.notifyReferrer(bot, referrerUser, user);
+        await this.notifyReferrer(bot, referrerUser, newUser);
       }
 
-      const greeting = isNew
-        ? `Salom, ${user.first_name}! 👋 Free Go'ga xush kelibsiz.`
-        : `Yana ko'rishganimizdan xursandman, ${user.first_name}! 👋`;
+      const greeting = `<b>🚀 Assalomu alaykum!</b>
+
+FreeGo botiga xush kelibsiz! 🎉
+Bu yerda siz Pro imkoniyatlardan maksimal darajada foydalanish, bepul obuna olish va foydali xizmatlardan foydalanish imkoniyatiga ega bo‘lasiz.
+
+Boshlash uchun pastdagi tugmani bosing va foydalanishni boshlang! 🚀`;
 
       await ctx.reply(greeting, {
+        parse_mode: 'HTML',
         reply_markup: {
           inline_keyboard: [
             [{ text: '🚀 Mini-ilovani ochish', web_app: { url: miniAppUrl } }],
@@ -238,7 +255,7 @@ export class BotUpdate implements OnModuleInit {
       const user = await this.usersService.findByTelegramId(from.id);
       if (!user) return;
       const link = `https://t.me/${botUsername}?start=ref_${user.referral_code}`;
-      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('Free Go orqali bepul Pro obuna oling!')}`;
+      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(shareText)}`;
       await ctx.reply(
         `🔗 Sizning referal havolangiz:\n\n${link}\n\n📊 Taklif qilganlar: ${user.referral_count} ta`,
         {
@@ -257,7 +274,7 @@ export class BotUpdate implements OnModuleInit {
       const user = await this.usersService.findByTelegramId(from.id);
       if (!user) return ctx.reply("Avval /start buyrug'ini yuboring.");
       const link = `https://t.me/${botUsername}?start=ref_${user.referral_code}`;
-      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('Free Go orqali bepul Pro obuna oling!')}`;
+      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(shareText)}`;
       await ctx.reply(
         `🔗 Sizning referal havolangiz:\n\n${link}\n\n📊 Taklif qilganlar: ${user.referral_count} ta`,
         {
