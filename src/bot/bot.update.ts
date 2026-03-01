@@ -36,12 +36,12 @@ export class BotUpdate implements OnModuleInit {
     const bot = this.botService.bot;
     const miniAppUrl = this.configService.get<string>('miniAppUrl') ?? '';
     const botUsername = this.configService.get<string>('bot.username') ?? '';
-    const shareText = `*🚀 FreeGo’da CANVA PRO — 30 KUN BEPUL!*
+    const shareText = `🚀 FreeGo’da CANVA PRO — 30 KUN BEPUL!
 
 Premium imkoniyatlardan foydalanmoqchimisiz?
 Endi sizda ajoyib imkoniyat bor! 🎁
 
-🔥 30 kunlik *CANVA PRO obuna*
+🔥 30 kunlik CANVA PRO obuna
 🔥 Cheklangan joylar
 🔥 Tez va oson faollashtirish
 
@@ -255,7 +255,7 @@ Boshlash uchun pastdagi tugmani bosing va foydalanishni boshlang! 🚀`;
       const user = await this.usersService.findByTelegramId(from.id);
       if (!user) return;
       const link = `https://t.me/${botUsername}?start=ref_${user.referral_code}`;
-      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(shareText)}`;
+      const shareUrl = `https://t.me/share/url?text=${encodeURIComponent(`${shareText}\n\n${link}`)}`;
       await ctx.reply(
         `🔗 Sizning referal havolangiz:\n\n${link}\n\n📊 Taklif qilganlar: ${user.referral_count} ta`,
         {
@@ -274,7 +274,7 @@ Boshlash uchun pastdagi tugmani bosing va foydalanishni boshlang! 🚀`;
       const user = await this.usersService.findByTelegramId(from.id);
       if (!user) return ctx.reply("Avval /start buyrug'ini yuboring.");
       const link = `https://t.me/${botUsername}?start=ref_${user.referral_code}`;
-      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(shareText)}`;
+      const shareUrl = `https://t.me/share/url?text=${encodeURIComponent(`${shareText}\n\n${link}`)}`;
       await ctx.reply(
         `🔗 Sizning referal havolangiz:\n\n${link}\n\n📊 Taklif qilganlar: ${user.referral_count} ta`,
         {

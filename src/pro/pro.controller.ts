@@ -54,12 +54,12 @@ export class ProController {
       const until = status.active_until
         ? new Date(status.active_until).toLocaleDateString('uz-UZ', { day: 'numeric', month: 'long', year: 'numeric' })
         : null;
-      const shareText = `*🚀 FreeGo’da CANVA PRO — 30 KUN BEPUL!*
+      const shareText = `🚀 FreeGo’da CANVA PRO — 30 KUN BEPUL!
 
 Premium imkoniyatlardan foydalanmoqchimisiz?
 Endi sizda ajoyib imkoniyat bor! 🎁
 
-🔥 30 kunlik *CANVA PRO obuna*
+🔥 30 kunlik CANVA PRO obuna
 🔥 Cheklangan joylar
 🔥 Tez va oson faollashtirish
 
@@ -80,7 +80,7 @@ Barcha premium funksiyalarni sinab ko‘ring va natijani o‘zingiz his qiling!
         `❗️Eslatma: Agar majburiy kanallardan chiqib ketsangiz, Avtomatik bloklanasiz va keyingi oy pro olish imkoniyatidan mahrum bolasiz`,
       ].filter((l) => l !== null && l !== undefined);
 
-      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent(shareText)}`;
+      const shareUrl = `https://t.me/share/url?text=${encodeURIComponent(`${shareText}\n\n${refLink}`)}`;
       await this.botService.bot.api.sendMessage(
         parseInt(user.telegram_id, 10),
         lines.join('\n'),
