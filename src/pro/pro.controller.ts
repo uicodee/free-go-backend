@@ -80,7 +80,7 @@ Barcha premium funksiyalarni sinab ko‘ring va natijani o‘zingiz his qiling!
         `❗️Eslatma: Agar majburiy kanallardan chiqib ketsangiz, Avtomatik bloklanasiz va keyingi oy pro olish imkoniyatidan mahrum bolasiz`,
       ].filter((l) => l !== null && l !== undefined);
 
-      const shareUrl = `https://t.me/share/url?text=${encodeURIComponent(`${shareText}\n\n${refLink}`)}`;
+      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(shareText)}&text=${encodeURIComponent(refLink)}`;
       await this.botService.bot.api.sendMessage(
         parseInt(user.telegram_id, 10),
         lines.join('\n'),

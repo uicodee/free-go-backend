@@ -255,7 +255,7 @@ Boshlash uchun pastdagi tugmani bosing va foydalanishni boshlang! 🚀`;
       const user = await this.usersService.findByTelegramId(from.id);
       if (!user) return;
       const link = `https://t.me/${botUsername}?start=ref_${user.referral_code}`;
-      const shareUrl = `https://t.me/share/url?text=${encodeURIComponent(`${shareText}\n\n${link}`)}`;
+      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(shareText)}&text=${encodeURIComponent(link)}`;
       await ctx.reply(
         `🔗 Sizning referal havolangiz:\n\n${link}\n\n📊 Taklif qilganlar: ${user.referral_count} ta`,
         {
@@ -274,7 +274,7 @@ Boshlash uchun pastdagi tugmani bosing va foydalanishni boshlang! 🚀`;
       const user = await this.usersService.findByTelegramId(from.id);
       if (!user) return ctx.reply("Avval /start buyrug'ini yuboring.");
       const link = `https://t.me/${botUsername}?start=ref_${user.referral_code}`;
-      const shareUrl = `https://t.me/share/url?text=${encodeURIComponent(`${shareText}\n\n${link}`)}`;
+      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(shareText)}&text=${encodeURIComponent(link)}`;
       await ctx.reply(
         `🔗 Sizning referal havolangiz:\n\n${link}\n\n📊 Taklif qilganlar: ${user.referral_count} ta`,
         {
