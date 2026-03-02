@@ -44,6 +44,7 @@ export class BotAdminUpdate implements OnModuleInit {
       .text('📢 Kanallar', 'adm:channels').row()
       .text('🔗 Pro URL', 'adm:set_pro_url').text(`📅 Pro kunlar: ${proDays}`, 'adm:set_pro_days').row()
       .text('🔄 Referallarni reset', 'adm:reset_referrals_confirm').row()
+      .text('🪑 Joylarni reset', 'adm:reset_slots_confirm').row()
       .text('⚡️ Pro berish', 'adm:grantpro').text('❌ Pro olish', 'adm:revokepro').row()
       .text('🚫 Bloklash', 'adm:ban').text('✅ Blokdan chiqarish', 'adm:unban').row()
       .text('📤 Broadcast', 'adm:broadcast').row();
@@ -127,6 +128,27 @@ export class BotAdminUpdate implements OnModuleInit {
         await this.usersService.resetReferralCounts();
         const kb = new InlineKeyboard().text('⬅️ Orqaga', 'adm:back');
         await ctx.editMessageText('✅ Barcha referallar 0 ga tushirildi.', { reply_markup: kb });
+        return;
+      }
+
+      // Reset slots — confirm prompt
+      if (data === 'adm:reset_slots_confirm') {
+        const slot = await this.proService.getProSlot();
+        const kb = new InlineKeyboard()
+          .text('✅ Ha, reset qilish', 'adm:reset_slots_do').row()
+          .text('❌ Bekor qilish', 'adm:back');
+        await ctx.editMessageText(
+          `⚠️ Aktivlashtirilgan obunalar sonini 0 ga tushirasizmi?\n\nHozir: ${slot?.taken_slots ?? 0}/${slot?.total_slots ?? 100}\n\nFoydalanuvchilarning Pro statusiga ta'sir qilmaydi — faqat hisoblagich sifirlanadi.`,
+          { reply_markup: kb },
+        );
+        return;
+      }
+
+      // Reset slots — execute
+      if (data === 'adm:reset_slots_do') {
+        await this.proService.resetTakenSlots();
+        const kb = new InlineKeyboard().text('⬅️ Orqaga', 'adm:back');
+        await ctx.editMessageText('✅ Aktivlashtirilgan obunalar soni 0 ga tushirildi.', { reply_markup: kb });
         return;
       }
 

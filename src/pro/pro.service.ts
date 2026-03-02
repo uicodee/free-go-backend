@@ -71,6 +71,10 @@ export class ProService implements OnModuleInit {
     return pro_until;
   }
 
+  async resetTakenSlots(): Promise<void> {
+    await this.proSlotRepo.update(1, { taken_slots: 0 });
+  }
+
   async setProUrl(url: string): Promise<void> {
     await this.proSlotRepo.update(1, { pro_url: url });
   }
