@@ -9,7 +9,7 @@ import { ProService } from '../pro/pro.service';
 import { ChannelsService } from '../channels/channels.service';
 import { BotMessage } from './bot-message.entity';
 
-type AdminAction = 'set_pro_url' | 'set_pro_days' | 'broadcast' | 'ban' | 'unban' | 'grantpro' | 'revokepro' | 'users_page' | 'add_channel' | 'del_channel';
+type AdminAction = 'set_pro_url' | 'set_pro_days' | 'broadcast' | 'ban' | 'unban' | 'grantpro' | 'revokepro' | 'users_page' | 'add_channel' | 'del_channel' | 'set_total_slots' | 'set_taken_slots';
 const awaitingInput = new Map<number, { action: AdminAction }>();
 
 @Injectable()
@@ -43,6 +43,7 @@ export class BotAdminUpdate implements OnModuleInit {
       .text('👥 Foydalanuvchilar', 'adm:users:1').row()
       .text('📢 Kanallar', 'adm:channels').row()
       .text('🔗 Pro URL', 'adm:set_pro_url').text(`📅 Pro kunlar: ${proDays}`, 'adm:set_pro_days').row()
+      .text(`🪑 Jami joy: ${stats.slots_total}`, 'adm:set_total_slots').text(`✅ Olingan: ${stats.slots_taken}`, 'adm:set_taken_slots').row()
       .text('🔄 Referallarni reset', 'adm:reset_referrals_confirm').row()
       .text('🪑 Joylarni reset', 'adm:reset_slots_confirm').row()
       .text('⚡️ Pro berish', 'adm:grantpro').text('❌ Pro olish', 'adm:revokepro').row()
@@ -250,6 +251,28 @@ export class BotAdminUpdate implements OnModuleInit {
         return;
       }
 
+      // Set Total Slots
+      if (data === 'adm:set_total_slots') {
+        awaitingInput.set(fromId, { action: 'set_total_slots' });
+        const kb = new InlineKeyboard().text('❌ Bekor qilish', 'adm:cancel_input');
+        await ctx.editMessageText(
+          '🪑 Jami joylar sonini kiriting:\n\nMisol: 100',
+          { reply_markup: kb },
+        );
+        return;
+      }
+
+      // Set Taken Slots
+      if (data === 'adm:set_taken_slots') {
+        awaitingInput.set(fromId, { action: 'set_taken_slots' });
+        const kb = new InlineKeyboard().text('❌ Bekor qilish', 'adm:cancel_input');
+        await ctx.editMessageText(
+          '✅ Olingan joylar sonini kiriting:\n\nMisol: 42',
+          { reply_markup: kb },
+        );
+        return;
+      }
+
       // Broadcast
       if (data === 'adm:broadcast') {
         awaitingInput.set(fromId, { action: 'broadcast' });
@@ -378,6 +401,32 @@ export class BotAdminUpdate implements OnModuleInit {
         }
         await this.proService.setProDays(days);
         await ctx.reply(`✅ Pro muddati yangilandi: ${days} kun`, {
+          reply_markup: { inline_keyboard: [[{ text: '🛠 Admin paneli', callback_data: 'adm:back' }]] },
+        });
+        return;
+      }
+
+      if (pending.action === 'set_total_slots') {
+        const val = parseInt(text, 10);
+        if (isNaN(val) || val < 0) {
+          return ctx.reply('❌ Noto\'g\'ri qiymat. Musbat son kiriting (masalan: 100).');
+        }
+        const slot = await this.proService.getProSlot();
+        await this.proService.updateSlots(val, slot?.taken_slots ?? 0, slot?.promo_ends_at ?? new Date());
+        await ctx.reply(`✅ Jami joylar yangilandi: ${val}`, {
+          reply_markup: { inline_keyboard: [[{ text: '🛠 Admin paneli', callback_data: 'adm:back' }]] },
+        });
+        return;
+      }
+
+      if (pending.action === 'set_taken_slots') {
+        const val = parseInt(text, 10);
+        if (isNaN(val) || val < 0) {
+          return ctx.reply('❌ Noto\'g\'ri qiymat. Musbat son kiriting (masalan: 42).');
+        }
+        const slot = await this.proService.getProSlot();
+        await this.proService.updateSlots(slot?.total_slots ?? 100, val, slot?.promo_ends_at ?? new Date());
+        await ctx.reply(`✅ Olingan joylar yangilandi: ${val}`, {
           reply_markup: { inline_keyboard: [[{ text: '🛠 Admin paneli', callback_data: 'adm:back' }]] },
         });
         return;
