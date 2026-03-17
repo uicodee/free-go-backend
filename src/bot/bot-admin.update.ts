@@ -9,7 +9,7 @@ import { ProService } from '../pro/pro.service';
 import { ChannelsService } from '../channels/channels.service';
 import { BotMessage } from './bot-message.entity';
 
-type AdminAction = 'set_pro_url' | 'set_pro_days' | 'broadcast' | 'ban' | 'unban' | 'grantpro' | 'revokepro' | 'users_page' | 'add_channel' | 'del_channel' | 'set_total_slots' | 'set_taken_slots';
+type AdminAction = 'set_pro_url' | 'set_pro_days' | 'broadcast' | 'ban' | 'unban' | 'grantpro' | 'revokepro' | 'users_page' | 'add_channel' | 'del_channel' | 'set_total_slots' | 'set_taken_slots' | 'add_admin' | 'del_admin';
 const awaitingInput = new Map<number, { action: AdminAction }>();
 
 @Injectable()
@@ -26,9 +26,11 @@ export class BotAdminUpdate implements OnModuleInit {
     private readonly botMessageRepo: Repository<BotMessage>,
   ) {}
 
-  private isAdmin(telegramId: number): boolean {
+  private async isAdmin(telegramId: number): Promise<boolean> {
     const adminIds = this.configService.get<string[]>('adminIds') ?? [];
-    return adminIds.includes(String(telegramId));
+    if (adminIds.includes(String(telegramId))) return true;
+    const user = await this.usersService.findByTelegramId(telegramId);
+    return user?.is_admin ?? false;
   }
 
   private async sendAdminMenu(ctx: any) {
@@ -48,6 +50,7 @@ export class BotAdminUpdate implements OnModuleInit {
       .text('🪑 Joylarni reset', 'adm:reset_slots_confirm').row()
       .text('⚡️ Pro berish', 'adm:grantpro').text('❌ Pro olish', 'adm:revokepro').row()
       .text('🚫 Bloklash', 'adm:ban').text('✅ Blokdan chiqarish', 'adm:unban').row()
+      .text('👑 Adminlar', 'adm:admins').row()
       .text('📤 Broadcast', 'adm:broadcast').row();
 
     const text =
@@ -71,7 +74,7 @@ export class BotAdminUpdate implements OnModuleInit {
 
     // ─── /admin ──────────────────────────────────────────────────────────────
     this.bot.command('admin', async (ctx) => {
-      if (!ctx.from || !this.isAdmin(ctx.from.id)) {
+      if (!ctx.from || !(await this.isAdmin(ctx.from.id))) {
         return ctx.reply('❌ Ruxsat yo\'q.');
       }
       await this.sendAdminMenu(ctx);
@@ -83,7 +86,7 @@ export class BotAdminUpdate implements OnModuleInit {
       const fromId = ctx.from.id;
 
       if (!data.startsWith('adm:')) return ctx.answerCallbackQuery();
-      if (!this.isAdmin(fromId)) {
+      if (!(await this.isAdmin(fromId))) {
         return ctx.answerCallbackQuery({ text: '❌ Ruxsat yo\'q.', show_alert: true });
       }
 
@@ -328,6 +331,64 @@ export class BotAdminUpdate implements OnModuleInit {
         return;
       }
 
+      // Admins list
+      if (data === 'adm:admins') {
+        const admins = await this.usersService.findAdmins();
+        const kb = new InlineKeyboard();
+        for (const a of admins) {
+          const name = [a.first_name, a.last_name].filter(Boolean).join(' ');
+          kb.text(`🗑 ${name}`, `adm:del_admin:${a.telegram_id}`).row();
+        }
+        kb.text('➕ Admin qo\'shish', 'adm:add_admin').row();
+        kb.text('⬅️ Orqaga', 'adm:back');
+        const lines = admins.map((a) => {
+          const name = [a.first_name, a.last_name].filter(Boolean).join(' ');
+          const handle = a.username ? ` @${a.username}` : '';
+          return `• ${name}${handle} [${a.telegram_id}]`;
+        });
+        const text = admins.length
+          ? `👑 Adminlar (${admins.length} ta):\n\n${lines.join('\n')}\n\nO\'chirish uchun ismga bosing.`
+          : '👑 Hozircha qo\'shimcha adminlar yo\'q.';
+        await ctx.editMessageText(text, { reply_markup: kb });
+        return;
+      }
+
+      // Add admin
+      if (data === 'adm:add_admin') {
+        awaitingInput.set(fromId, { action: 'add_admin' });
+        const kb = new InlineKeyboard().text('❌ Bekor qilish', 'adm:cancel_input');
+        await ctx.editMessageText(
+          '👑 Admin qo\'shish\n\nTelegram ID-ni yuboring:',
+          { reply_markup: kb },
+        );
+        return;
+      }
+
+      // Remove admin
+      if (data.startsWith('adm:del_admin:')) {
+        const targetId = parseInt(data.slice('adm:del_admin:'.length), 10);
+        await this.usersService.setAdmin(targetId, false);
+        // Refresh admins page
+        const admins = await this.usersService.findAdmins();
+        const kb = new InlineKeyboard();
+        for (const a of admins) {
+          const name = [a.first_name, a.last_name].filter(Boolean).join(' ');
+          kb.text(`🗑 ${name}`, `adm:del_admin:${a.telegram_id}`).row();
+        }
+        kb.text('➕ Admin qo\'shish', 'adm:add_admin').row();
+        kb.text('⬅️ Orqaga', 'adm:back');
+        const lines = admins.map((a) => {
+          const name = [a.first_name, a.last_name].filter(Boolean).join(' ');
+          const handle = a.username ? ` @${a.username}` : '';
+          return `• ${name}${handle} [${a.telegram_id}]`;
+        });
+        const text = admins.length
+          ? `👑 Adminlar (${admins.length} ta):\n\n${lines.join('\n')}\n\nO\'chirish uchun ismga bosing.`
+          : '👑 Hozircha qo\'shimcha adminlar yo\'q.';
+        await ctx.editMessageText(text, { reply_markup: kb });
+        return;
+      }
+
       // Cancel input
       if (data === 'adm:cancel_input') {
         awaitingInput.delete(fromId);
@@ -339,7 +400,7 @@ export class BotAdminUpdate implements OnModuleInit {
     // ─── Text message handler (awaiting input) ───────────────────────────────
     this.bot.on('message:text', async (ctx) => {
       const fromId = ctx.from?.id;
-      if (!fromId || !this.isAdmin(fromId)) return;
+      if (!fromId || !(await this.isAdmin(fromId))) return;
 
       const pending = awaitingInput.get(fromId);
       if (!pending) return;
@@ -505,11 +566,24 @@ export class BotAdminUpdate implements OnModuleInit {
         });
         return;
       }
+
+      if (pending.action === 'add_admin') {
+        const targetId = parseInt(text, 10);
+        if (isNaN(targetId)) return ctx.reply('❌ Noto\'g\'ri ID.');
+        const user = await this.usersService.findByTelegramId(targetId);
+        if (!user) return ctx.reply('❌ Foydalanuvchi topilmadi.');
+        await this.usersService.setAdmin(targetId, true);
+        const name = [user.first_name, user.last_name].filter(Boolean).join(' ');
+        await ctx.reply(`✅ ${name} [${targetId}] admin qilindi.`, {
+          reply_markup: { inline_keyboard: [[{ text: '👑 Adminlar', callback_data: 'adm:admins' }]] },
+        });
+        return;
+      }
     });
 
     // ─── Legacy text commands (still work) ───────────────────────────────────
     this.bot.command('stats', async (ctx) => {
-      if (!ctx.from || !this.isAdmin(ctx.from.id)) return ctx.reply('❌ Ruxsat yo\'q.');
+      if (!ctx.from || !(await this.isAdmin(ctx.from.id))) return ctx.reply('❌ Ruxsat yo\'q.');
       const stats = await this.proService.getStats();
       await ctx.reply(
         `📊 Statistika\n\n👥 ${stats.total_users}\n⚡️ Pro: ${stats.pro_users}\n🪑 ${stats.slots_taken}/${stats.slots_total}`,
@@ -517,7 +591,7 @@ export class BotAdminUpdate implements OnModuleInit {
     });
 
     this.bot.command('broadcast', async (ctx) => {
-      if (!ctx.from || !this.isAdmin(ctx.from.id)) return ctx.reply('❌ Ruxsat yo\'q.');
+      if (!ctx.from || !(await this.isAdmin(ctx.from.id))) return ctx.reply('❌ Ruxsat yo\'q.');
       const text = ctx.match;
       if (!text) return ctx.reply('Foydalanish: /broadcast <matn>');
       await ctx.reply('📤 Yuborilmoqda...');
@@ -535,7 +609,7 @@ export class BotAdminUpdate implements OnModuleInit {
     });
 
     this.bot.command('ban', async (ctx) => {
-      if (!ctx.from || !this.isAdmin(ctx.from.id)) return ctx.reply('❌ Ruxsat yo\'q.');
+      if (!ctx.from || !(await this.isAdmin(ctx.from.id))) return ctx.reply('❌ Ruxsat yo\'q.');
       const id = parseInt(ctx.match ?? '', 10);
       if (isNaN(id)) return ctx.reply('Foydalanish: /ban <telegram_id>');
       await this.usersService.setBanned(id, true);
@@ -543,7 +617,7 @@ export class BotAdminUpdate implements OnModuleInit {
     });
 
     this.bot.command('unban', async (ctx) => {
-      if (!ctx.from || !this.isAdmin(ctx.from.id)) return ctx.reply('❌ Ruxsat yo\'q.');
+      if (!ctx.from || !(await this.isAdmin(ctx.from.id))) return ctx.reply('❌ Ruxsat yo\'q.');
       const id = parseInt(ctx.match ?? '', 10);
       if (isNaN(id)) return ctx.reply('Foydalanish: /unban <telegram_id>');
       await this.usersService.setBanned(id, false);
@@ -551,7 +625,7 @@ export class BotAdminUpdate implements OnModuleInit {
     });
 
     this.bot.command('grantpro', async (ctx) => {
-      if (!ctx.from || !this.isAdmin(ctx.from.id)) return ctx.reply('❌ Ruxsat yo\'q.');
+      if (!ctx.from || !(await this.isAdmin(ctx.from.id))) return ctx.reply('❌ Ruxsat yo\'q.');
       const parts = (ctx.match ?? '').trim().split(/\s+/);
       const id = parseInt(parts[0], 10); const days = parseInt(parts[1] ?? '30', 10);
       if (isNaN(id)) return ctx.reply('Foydalanish: /grantpro <id> [kunlar]');
@@ -561,7 +635,7 @@ export class BotAdminUpdate implements OnModuleInit {
     });
 
     this.bot.command('revokepro', async (ctx) => {
-      if (!ctx.from || !this.isAdmin(ctx.from.id)) return ctx.reply('❌ Ruxsat yo\'q.');
+      if (!ctx.from || !(await this.isAdmin(ctx.from.id))) return ctx.reply('❌ Ruxsat yo\'q.');
       const id = parseInt(ctx.match ?? '', 10);
       if (isNaN(id)) return ctx.reply('Foydalanish: /revokepro <id>');
       await this.usersService.setPro(id, false);
@@ -569,7 +643,7 @@ export class BotAdminUpdate implements OnModuleInit {
     });
 
     this.bot.command('users', async (ctx) => {
-      if (!ctx.from || !this.isAdmin(ctx.from.id)) return ctx.reply('❌ Ruxsat yo\'q.');
+      if (!ctx.from || !(await this.isAdmin(ctx.from.id))) return ctx.reply('❌ Ruxsat yo\'q.');
       const page = parseInt(ctx.match ?? '1', 10) || 1;
       const [users, total] = await this.usersService.findAll(page, 10);
       if (!users.length) return ctx.reply('Foydalanuvchi topilmadi.');

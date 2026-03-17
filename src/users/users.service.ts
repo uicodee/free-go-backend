@@ -121,6 +121,10 @@ export class UsersService {
     );
   }
 
+  findAdmins(): Promise<User[]> {
+    return this.userRepo.find({ where: { is_admin: true }, order: { created_at: 'ASC' } });
+  }
+
   countAll(): Promise<number> {
     return this.userRepo.count();
   }

@@ -9,6 +9,7 @@ import { LeaderboardModule } from './leaderboard/leaderboard.module';
 import { ProModule } from './pro/pro.module';
 import { ReferralModule } from './referral/referral.module';
 import { BotModule } from './bot/bot.module';
+import { ChannelsModule } from './channels/channels.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { BotModule } from './bot/bot.module';
     ProModule,
     ReferralModule,
     BotModule,
+    ChannelsModule,
   ],
 })
 export class AppModule {}
