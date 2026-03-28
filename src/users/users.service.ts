@@ -110,6 +110,10 @@ export class UsersService {
     );
   }
 
+  async revokeAllPro(): Promise<void> {
+    await this.userRepo.update({ is_pro: true }, { is_pro: false, pro_until: null });
+  }
+
   async resetReferralCounts(): Promise<void> {
     await this.userRepo.update({}, { referral_count: 0 });
   }

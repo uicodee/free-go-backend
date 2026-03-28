@@ -182,9 +182,9 @@ Barcha premium funksiyalarni sinab ko‘ring va natijani o‘zingiz his qiling!
           { reply_markup: kb },
         );
       } else {
-        const user = await this.usersService.findByTelegramId(ctx.from.id);
-        const greeting = `Salom, ${user?.first_name ?? ctx.from.first_name}! 👋 Free Go'ga xush kelibsiz.`;
+        const greeting = `<b>🚀 Assalomu alaykum!</b>\n\nFreeGo botiga xush kelibsiz! 🎉\nBu yerda siz Canva Proga  bepul obuna olish va foydali xizmatlardan foydalanish imkoniyatiga ega bo'lasiz.\n\nBoshlash uchun pastdagi tugmani bosing va foydalanishni boshlang! 👇`;
         await ctx.editMessageText(greeting, {
+          parse_mode: 'HTML',
           reply_markup: new InlineKeyboard()
             .webApp('🚀 Mini-ilovani ochish', miniAppUrl)
             .row()

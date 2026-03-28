@@ -49,6 +49,7 @@ export class BotAdminUpdate implements OnModuleInit {
       .text('🔄 Referallarni reset', 'adm:reset_referrals_confirm').row()
       .text('🪑 Joylarni reset', 'adm:reset_slots_confirm').row()
       .text('⚡️ Pro berish', 'adm:grantpro').text('❌ Pro olish', 'adm:revokepro').row()
+      .text('🗑 Hammadan Pro olish', 'adm:revoke_all_pro_confirm').row()
       .text('🚫 Bloklash', 'adm:ban').text('✅ Blokdan chiqarish', 'adm:unban').row()
       .text('👑 Adminlar', 'adm:admins').row()
       .text('📤 Broadcast', 'adm:broadcast').row();
@@ -153,6 +154,27 @@ export class BotAdminUpdate implements OnModuleInit {
         await this.proService.resetTakenSlots();
         const kb = new InlineKeyboard().text('⬅️ Orqaga', 'adm:back');
         await ctx.editMessageText('✅ Aktivlashtirilgan obunalar soni 0 ga tushirildi.', { reply_markup: kb });
+        return;
+      }
+
+      // Revoke all pro — confirm prompt
+      if (data === 'adm:revoke_all_pro_confirm') {
+        const proCount = await this.usersService.countPro();
+        const kb = new InlineKeyboard()
+          .text('✅ Ha, barchasidan olish', 'adm:revoke_all_pro_do').row()
+          .text('❌ Bekor qilish', 'adm:back');
+        await ctx.editMessageText(
+          `⚠️ Hozirda ${proCount} ta foydalanuvchida Pro bor.\n\nBarchasidan Pro obunasini olib tashlaysizmi?`,
+          { reply_markup: kb },
+        );
+        return;
+      }
+
+      // Revoke all pro — execute
+      if (data === 'adm:revoke_all_pro_do') {
+        await this.usersService.revokeAllPro();
+        const kb = new InlineKeyboard().text('⬅️ Orqaga', 'adm:back');
+        await ctx.editMessageText('✅ Barcha foydalanuvchilardan Pro olindi.', { reply_markup: kb });
         return;
       }
 
