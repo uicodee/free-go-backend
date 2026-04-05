@@ -115,7 +115,12 @@ export class UsersService {
   }
 
   async resetReferralCounts(): Promise<void> {
-    await this.userRepo.update({}, { referral_count: 0 });
+    await this.userRepo
+      .createQueryBuilder()
+      .update(User)
+      .set({ referral_count: 0 })
+      .where('referral_count != :count', { count: 0 })
+      .execute();
   }
 
   async setAdmin(telegramId: number, isAdmin: boolean): Promise<void> {
